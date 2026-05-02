@@ -1,6 +1,8 @@
 # gi-log
 
-gi-log gives Claude Code a long-term memory. Every conversation you have is automatically saved and embedded. When you reference something from a past session, Claude recalls it — no re-explaining needed.
+Every new Claude Code session starts cold. You re-explain your stack, re-describe past decisions, re-solve problems you've already solved. gi-log fixes this by automatically saving every conversation to a local database with semantic search. When you reference something from a past session, Claude recalls it — no re-explaining needed.
+
+**Cost:** gi-log uses OpenAI `text-embedding-3-small` for embeddings — one call per conversation exchange. At $0.02 per million tokens, saving thousands of conversations costs less than $1.
 
 ## How it works
 
