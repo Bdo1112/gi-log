@@ -8,14 +8,15 @@ import (
 )
 
 type Config struct {
-	Embedding EmbeddingConfig `json:"embedding"`
-	DB        DBConfig        `json:"db"`
-	Search    SearchConfig    `json:"search"`
+	AI     AIConfig     `json:"ai"`
+	DB     DBConfig     `json:"db"`
+	Search SearchConfig `json:"search"`
 }
 
-type EmbeddingConfig struct {
-	APIKey string `json:"api_key"`
-	Model  string `json:"model"`
+type AIConfig struct {
+	APIKey          string `json:"api_key"`
+	EmbeddingModel  string `json:"embedding_model"`
+	ExtractionModel string `json:"extraction_model"`
 }
 
 type DBConfig struct {
@@ -44,9 +45,10 @@ func initGiLogDir() error {
 	cfgPath := configPath()
 	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
 		empty := Config{
-			Embedding: EmbeddingConfig{
-				APIKey: "",
-				Model:  "text-embedding-3-small",
+			AI: AIConfig{
+				APIKey:          "",
+				EmbeddingModel:  "text-embedding-3-small",
+				ExtractionModel: "gpt-4o-mini",
 			},
 			DB: DBConfig{
 				Path: filepath.Join(dir, "gi_log.db"),
@@ -59,7 +61,7 @@ func initGiLogDir() error {
 		if err := os.WriteFile(cfgPath, data, 0600); err != nil {
 			return err
 		}
-		fmt.Printf("gi-log: config created at %s\nPlease set embedding.api_key before using.\n", cfgPath)
+		fmt.Printf("gi-log: config created at %s\nPlease set ai.api_key before using.\n", cfgPath)
 	}
 
 	return nil
@@ -68,9 +70,12 @@ func initGiLogDir() error {
 func loadConfig() (Config, error) {
 	home, _ := os.UserHomeDir()
 	cfg := Config{
-		Embedding: EmbeddingConfig{Model: "text-embedding-3-small"},
-		DB:        DBConfig{Path: filepath.Join(home, ".gi-log", "gi_log.db")},
-		Search:    SearchConfig{TopK: 5},
+		AI: AIConfig{
+			EmbeddingModel:  "text-embedding-3-small",
+			ExtractionModel: "gpt-4o-mini",
+		},
+		DB:     DBConfig{Path: filepath.Join(home, ".gi-log", "gi_log.db")},
+		Search: SearchConfig{TopK: 5},
 	}
 
 	data, err := os.ReadFile(configPath())
@@ -82,11 +87,14 @@ func loadConfig() (Config, error) {
 		return cfg, fmt.Errorf("invalid config: %w", err)
 	}
 
-	if cfg.Embedding.APIKey == "" {
-		return cfg, fmt.Errorf("embedding.api_key is not set in %s", configPath())
+	if cfg.AI.APIKey == "" {
+		return cfg, fmt.Errorf("ai.api_key is not set in %s", configPath())
 	}
-	if cfg.Embedding.Model == "" {
-		cfg.Embedding.Model = "text-embedding-3-small"
+	if cfg.AI.EmbeddingModel == "" {
+		cfg.AI.EmbeddingModel = "text-embedding-3-small"
+	}
+	if cfg.AI.ExtractionModel == "" {
+		cfg.AI.ExtractionModel = "gpt-4o-mini"
 	}
 	if cfg.Search.TopK == 0 {
 		cfg.Search.TopK = 5

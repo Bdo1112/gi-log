@@ -32,8 +32,6 @@ func tmpFile(sessionID string) string {
 	return filepath.Join(tmpDir(), sessionID+".json")
 }
 
-// runHookUserPrompt handles the UserPromptSubmit hook.
-// It stores the user message in a temp file keyed by session_id.
 func runHookUserPrompt() error {
 	var payload userPromptPayload
 	if err := json.NewDecoder(os.Stdin).Decode(&payload); err != nil {
@@ -54,9 +52,6 @@ func runHookUserPrompt() error {
 	return os.WriteFile(tmpFile(payload.SessionID), data, 0644)
 }
 
-// runHookStop handles the Stop hook.
-// It reads the temp file for the user message, combines with the assistant message,
-// embeds the pair, and inserts into the DB.
 func runHookStop(cfg Config) error {
 	var payload stopPayload
 	if err := json.NewDecoder(os.Stdin).Decode(&payload); err != nil {
@@ -66,7 +61,6 @@ func runHookStop(cfg Config) error {
 		return fmt.Errorf("missing session_id or last_assistant_message")
 	}
 
-	// read the user message from the temp file
 	tmp := tmpFile(payload.SessionID)
 	raw, err := os.ReadFile(tmp)
 	if err != nil {
@@ -78,23 +72,13 @@ func runHookStop(cfg Config) error {
 		return fmt.Errorf("invalid tmp file: %w", err)
 	}
 
-	// embed the combined text
-	combined := "User: " + td.UserMsg + " Assistant: " + payload.LastAssistantMessage
-	vec, err := embedText(combined, cfg.Embedding.Model, cfg.Embedding.APIKey)
-	if err != nil {
-		return fmt.Errorf("embed: %w", err)
+	if err := saveExchange(payload.SessionID, td.UserMsg, payload.LastAssistantMessage, cfg); err != nil {
+		return err
 	}
 
-	// insert into DB
-	id := newID()
-	if err := insertExchange(id, payload.SessionID, td.UserMsg, payload.LastAssistantMessage, toBytes(vec)); err != nil {
-		return fmt.Errorf("db: %w", err)
-	}
-
-	// clean up temp file
 	os.Remove(tmp)
 
-	fmt.Printf(`{"success":true,"id":%q}`, id)
+	fmt.Printf(`{"success":true,"id":%q}`, payload.SessionID)
 	fmt.Println()
 	return nil
 }

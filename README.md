@@ -24,7 +24,7 @@ cd gi-log
 make install
 ```
 
-This builds the binary, moves it to `~/.local/bin/gi-log`, registers the hooks in `~/.claude/settings.json`, and adds the MCP server to `~/.claude.json`.
+This builds the binary, moves it to `~/.local/bin/gi-log`, registers the hooks in `~/.claude/settings.json`, adds the MCP server to `~/.claude.json`, and installs the `/gi-log` slash command.
 
 Then set your OpenAI API key:
 
@@ -35,9 +35,10 @@ Then set your OpenAI API key:
 
 ```json
 {
-  "embedding": {
+  "ai": {
     "api_key": "sk-...",
-    "model": "text-embedding-3-small"
+    "embedding_model": "text-embedding-3-small",
+    "extraction_model": "gpt-4o-mini"
   },
   "db": {
     "path": "~/.gi-log/gi_log.db"
@@ -54,20 +55,41 @@ Restart Claude Code after install.
 
 gi-log works automatically in the background. Conversations are saved as you go.
 
-To trigger recall, just reference a past conversation naturally:
+### Recalling past conversations
 
-> "I remember we talked about how to handle the database schema"
+Use the `/gi-log` slash command to search past conversations:
 
-> "We discussed this before — how did we handle auth?"
+```
+/gi-log
+```
 
-Claude will call the `recall` tool, search your past conversations, and use the results as context.
+Claude will extract the current topic and search your conversation history automatically.
+
+Or search with a specific query:
+
+```
+/gi-log Go debugging Delve
+```
+
+```
+/gi-log database schema decisions
+```
+
+### How saving works
+
+On every Claude response, gi-log automatically:
+1. Captures your message and Claude's response
+2. Generates an embedding vector via OpenAI
+3. Extracts key entities from the conversation
+4. Stores everything in a local SQLite database
 
 ## Config reference
 
 | Field | Default | Description |
 |---|---|---|
-| `embedding.api_key` | — | Your OpenAI API key (required) |
-| `embedding.model` | `text-embedding-3-small` | OpenAI embedding model |
+| `ai.api_key` | — | Your OpenAI API key (required) |
+| `ai.embedding_model` | `text-embedding-3-small` | OpenAI embedding model |
+| `ai.extraction_model` | `gpt-4o-mini` | OpenAI model for entity extraction |
 | `db.path` | `~/.gi-log/gi_log.db` | Path to the SQLite database |
 | `search.top_k` | `5` | Number of results returned per recall |
 

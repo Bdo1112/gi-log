@@ -10,6 +10,12 @@ import (
 	"net/http"
 )
 
+type Embedder struct{}
+
+func (e Embedder) Process(text, model, apiKey string) ([]float32, error) {
+	return embedText(text, model, apiKey)
+}
+
 type embedRequest struct {
 	Input string `json:"input"`
 	Model string `json:"model"`

@@ -63,6 +63,47 @@ func runInstall() error {
 		fmt.Println("gi-log: MCP server already registered")
 	}
 
+	// --- slash command: ~/.claude/commands/gi-log.md ---
+	if err := ensureSlashCommand(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+const slashCommandMarker = "# gi-log"
+
+const slashCommandContent = `# gi-log
+Search past conversation history using the gi-log recall MCP tool.
+
+If the user provided a query after /gi-log, use that as the search query directly.
+
+If no query was provided, look at the current conversation and extract the main topic or technology being discussed, then use that as the search query.
+
+Use specific technical terms (e.g. "Go debugging Delve" not "past work"). Call the gi-log recall tool and present the results as relevant past context.
+`
+
+func ensureSlashCommand() error {
+	commandsDir := filepath.Join(os.Getenv("HOME"), ".claude", "commands")
+	commandPath := filepath.Join(commandsDir, "gi-log.md")
+
+	if data, err := os.ReadFile(commandPath); err == nil {
+		if len(data) >= len(slashCommandMarker) && string(data[:len(slashCommandMarker)]) == slashCommandMarker {
+			fmt.Println("gi-log: /gi-log slash command already installed")
+		} else {
+			fmt.Println("gi-log: ~/.claude/commands/gi-log.md already exists (not ours), skipping")
+		}
+		return nil
+	}
+
+	if err := os.MkdirAll(commandsDir, 0755); err != nil {
+		return fmt.Errorf("cannot create commands dir: %w", err)
+	}
+
+	if err := os.WriteFile(commandPath, []byte(slashCommandContent), 0644); err != nil {
+		return fmt.Errorf("cannot write gi-log.md: %w", err)
+	}
+	fmt.Println("gi-log: /gi-log slash command installed")
 	return nil
 }
 

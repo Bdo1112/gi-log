@@ -32,7 +32,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "db error: %s\n", err)
 		os.Exit(1)
 	}
-
+	fmt.Println(os.Args[1])
 	switch os.Args[1] {
 	case "install":
 		if err := runInstall(); err != nil {
@@ -91,18 +91,11 @@ func runSave(cfg Config) error {
 		return fmt.Errorf("session_id, user_msg, and assistant_msg are required")
 	}
 
-	combined := "User: " + input.UserMsg + " Assistant: " + input.AssistantMsg
-	vec, err := embedText(combined, cfg.Embedding.Model, cfg.Embedding.APIKey)
-	if err != nil {
-		return fmt.Errorf("embed: %w", err)
+	if err := saveExchange(input.SessionID, input.UserMsg, input.AssistantMsg, cfg); err != nil {
+		return err
 	}
 
-	id := newID()
-	if err := insertExchange(id, input.SessionID, input.UserMsg, input.AssistantMsg, toBytes(vec)); err != nil {
-		return fmt.Errorf("db: %w", err)
-	}
-
-	fmt.Printf(`{"success":true,"id":%q}`, id)
+	fmt.Printf(`{"success":true}`)
 	fmt.Println()
 	return nil
 }
@@ -142,15 +135,38 @@ func runSearch(cfg Config) error {
 }
 
 func doSearch(query string, cfg Config) ([]SearchResult, error) {
-	vec, err := embedText(query, cfg.Embedding.Model, cfg.Embedding.APIKey)
+	// extract keywords first to decide pipeline
+	keywords, err := Extractor{}.Process(query, cfg.AI.ExtractionModel, cfg.AI.APIKey)
+	if err != nil {
+		return nil, fmt.Errorf("extract: %w", err)
+	}
+
+	vec, err := Embedder{}.Process(query, cfg.AI.EmbeddingModel, cfg.AI.APIKey)
 	if err != nil {
 		return nil, fmt.Errorf("embed: %w", err)
 	}
+
+	ctx := SearchContext{
+		RawQuery: query,
+		QueryVec: vec,
+		Keywords: keywords,
+	}
+
 	exchanges, err := fetchAllExchanges()
 	if err != nil {
 		return nil, fmt.Errorf("db: %w", err)
 	}
-	return rankMemories(vec, exchanges, cfg.Search.TopK), nil
+
+	// try keyword pipeline first
+	if len(keywords) > 0 {
+		results := KeywordPipeline{}.Search(ctx, exchanges, cfg.Search.TopK)
+		if len(results) > 0 {
+			return results, nil
+		}
+	}
+
+	// fall back to semantic pipeline
+	return SemanticPipeline{}.Search(ctx, exchanges, cfg.Search.TopK), nil
 }
 
 func formatResults(results []SearchResult) string {

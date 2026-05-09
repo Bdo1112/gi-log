@@ -14,6 +14,7 @@ type Exchange struct {
 	UserMsg      string
 	AssistantMsg string
 	Embedding    []byte
+	Entities     []string
 	CreatedAt    string
 }
 
@@ -37,12 +38,13 @@ func initDB(path string) error {
 
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS exchanges (
-			id           TEXT PRIMARY KEY,
-			session_id   TEXT NOT NULL,
-			user_msg     TEXT NOT NULL,
+			id            TEXT PRIMARY KEY,
+			session_id    TEXT NOT NULL,
+			user_msg      TEXT NOT NULL,
 			assistant_msg TEXT NOT NULL,
-			embedding    BLOB NOT NULL,
-			created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			embedding     BLOB NOT NULL,
+			entities      TEXT DEFAULT '[]',
+			created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 		CREATE TABLE IF NOT EXISTS sessions (
 			id         TEXT PRIMARY KEY,
@@ -51,19 +53,26 @@ func initDB(path string) error {
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		);
 	`)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// migrate existing DB — add entities column if missing
+	db.Exec("ALTER TABLE exchanges ADD COLUMN entities TEXT DEFAULT '[]'")
+
+	return nil
 }
 
-func insertExchange(id, sessionID, userMsg, assistantMsg string, embedding []byte) error {
+func insertExchange(id, sessionID, userMsg, assistantMsg string, embedding []byte, entities []string) error {
 	_, err := db.Exec(
-		"INSERT INTO exchanges (id, session_id, user_msg, assistant_msg, embedding) VALUES (?, ?, ?, ?, ?)",
-		id, sessionID, userMsg, assistantMsg, embedding,
+		"INSERT INTO exchanges (id, session_id, user_msg, assistant_msg, embedding, entities) VALUES (?, ?, ?, ?, ?, ?)",
+		id, sessionID, userMsg, assistantMsg, embedding, entitiesToJSON(entities),
 	)
 	return err
 }
 
 func fetchAllExchanges() ([]Exchange, error) {
-	rows, err := db.Query("SELECT id, session_id, user_msg, assistant_msg, embedding, created_at FROM exchanges")
+	rows, err := db.Query("SELECT id, session_id, user_msg, assistant_msg, embedding, entities, created_at FROM exchanges")
 	if err != nil {
 		return nil, err
 	}
@@ -72,9 +81,11 @@ func fetchAllExchanges() ([]Exchange, error) {
 	var result []Exchange
 	for rows.Next() {
 		var e Exchange
-		if err := rows.Scan(&e.ID, &e.SessionID, &e.UserMsg, &e.AssistantMsg, &e.Embedding, &e.CreatedAt); err != nil {
+		var entitiesJSON string
+		if err := rows.Scan(&e.ID, &e.SessionID, &e.UserMsg, &e.AssistantMsg, &e.Embedding, &entitiesJSON, &e.CreatedAt); err != nil {
 			return nil, err
 		}
+		e.Entities = entitiesFromJSON(entitiesJSON)
 		result = append(result, e)
 	}
 	return result, rows.Err()

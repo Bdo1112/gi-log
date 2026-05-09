@@ -61,7 +61,7 @@ func runMCP(cfg Config) {
 					"tools": []map[string]any{
 						{
 							"name":        "recall",
-							"description": "Search past conversation memories for relevant context. Call this when the user references something discussed in a previous session, or when prior context would help.",
+							"description": "Search past conversation memories stored in gi-log. Always call this when the user asks about previous sessions or past work. Use specific technical terms as the query (e.g. 'Go debugging Delve' not 'what did we work on'). This is the PRIMARY source of conversation history.",
 							"inputSchema": map[string]any{
 								"type": "object",
 								"properties": map[string]any{
