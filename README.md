@@ -2,7 +2,7 @@
 
 > Your context. Everywhere.
 
-AI sessions start cold. You re-explain your stack, re-describe past decisions, and re-solve problems you've already solved. gi-log gives your AI persistent, portable context that carries across sessions.
+AI sessions start cold. You re-explain your stack, re-describe past decisions, and re-solve problems you've already solved. gi-log gives your AI persistent, portable context that carries follows you across sessions, models, and tools.
 
 When context matters again, gi-log brings it back.
 
