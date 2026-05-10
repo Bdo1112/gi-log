@@ -1,4 +1,4 @@
-module gi-log
+module github.com/Bdo1112/gi-log
 
 go 1.25.6
 

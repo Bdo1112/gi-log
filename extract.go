@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"gi-log/util/prompt"
+	"github.com/Bdo1112/gi-log/util/prompt"
 )
 
 type Extractor struct{}
