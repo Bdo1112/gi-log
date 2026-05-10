@@ -1,15 +1,25 @@
 # gi-log
 
-Every new Claude Code session starts cold. You re-explain your stack, re-describe past decisions, re-solve problems you've already solved. gi-log fixes this by automatically saving every conversation to a local database with semantic search. When you reference something from a past session, Claude recalls it — no re-explaining needed.
+> Your context. Everywhere.
 
-**Cost:** gi-log uses OpenAI `text-embedding-3-small` for embeddings — one call per conversation exchange. At $0.02 per million tokens, saving thousands of conversations costs less than $1.
+AI sessions start cold. You re-explain your stack, re-describe past decisions, and re-solve problems you've already solved. gi-log gives your AI persistent, portable context that carries across sessions.
+
+When context matters again, gi-log brings it back.
+
+Currently supports Claude Code. Support for additional AI tools and agents is planned.
+
+**Cost:** gi-log makes two OpenAI API calls per conversation exchange:
+- `text-embedding-3-small` for embeddings — $0.02 per million tokens
+- `gpt-4o-mini` for entity extraction — $0.15 per million input tokens, $0.60 per million output tokens
+
+For typical usage, saving thousands of conversations costs only a few dollars.
 
 ## How it works
 
 - **On every response** — a hook captures the user message and assistant response, embeds them via OpenAI, and stores them in a local SQLite database
 - **On recall** — an MCP tool searches past conversations using cosine similarity and injects the most relevant matches as context
 
-Everything runs locally. The only external call is to OpenAI for embeddings.
+All conversations and search indexes are stored locally on your machine.
 
 ## Requirements
 
