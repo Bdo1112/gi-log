@@ -19,12 +19,11 @@ Everything runs locally. The only external call is to OpenAI for embeddings.
 ## Install
 
 ```bash
-git clone <repo>
-cd gi-log
-make install
+go install github.com/Bdo1112/gi-log@latest
+gi-log install
 ```
 
-This builds the binary, moves it to `~/.local/bin/gi-log`, registers the hooks in `~/.claude/settings.json`, adds the MCP server to `~/.claude.json`, and installs the `/gi-log` slash command.
+This registers the hooks in `~/.claude/settings.json`, adds the MCP server to `~/.claude.json`, and installs the `/gi-log` slash command.
 
 Then set your OpenAI API key:
 
