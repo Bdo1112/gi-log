@@ -52,6 +52,21 @@ func runHookUserPrompt() error {
 	return os.WriteFile(tmpFile(payload.SessionID), data, 0644)
 }
 
+func runHookSessionEnd(cfg Config) error {
+	var payload struct {
+		SessionID     string `json:"session_id"`
+		HookEventName string `json:"hook_event_name"`
+	}
+	if err := json.NewDecoder(os.Stdin).Decode(&payload); err != nil {
+		return fmt.Errorf("invalid payload: %w", err)
+	}
+	if payload.SessionID == "" {
+		return fmt.Errorf("missing session_id")
+	}
+
+	return summarizeSession(payload.SessionID, cfg)
+}
+
 func runHookStop(cfg Config) error {
 	var payload stopPayload
 	if err := json.NewDecoder(os.Stdin).Decode(&payload); err != nil {

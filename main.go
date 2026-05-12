@@ -58,6 +58,12 @@ func main() {
 			fmt.Fprintf(os.Stderr, "search error: %s\n", err)
 			os.Exit(1)
 		}
+	case "hook-session-end":
+		if err := runHookSessionEnd(cfg); err != nil {
+			logError(err)
+			fmt.Fprintf(os.Stderr, "hook-session-end error: %s\n", err)
+			os.Exit(1)
+		}
 	case "hook-user-prompt":
 		if err := runHookUserPrompt(); err != nil {
 			logError(err)
@@ -152,14 +158,19 @@ func doSearch(query string, cfg Config) ([]SearchResult, error) {
 		Keywords: keywords,
 	}
 
+	sessions, err := fetchAllSessions()
+	if err != nil {
+		return nil, fmt.Errorf("db sessions: %w", err)
+	}
+
 	exchanges, err := fetchAllExchanges()
 	if err != nil {
-		return nil, fmt.Errorf("db: %w", err)
+		return nil, fmt.Errorf("db exchanges: %w", err)
 	}
 
 	// try keyword pipeline first
 	if len(keywords) > 0 {
-		results := KeywordPipeline{}.Search(ctx, exchanges, cfg.Search.TopK)
+		results := KeywordPipeline{}.Search(ctx, sessions, exchanges, cfg.Search.TopK)
 		if len(results) > 0 {
 			return results, nil
 		}

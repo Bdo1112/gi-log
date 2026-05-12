@@ -32,5 +32,16 @@ func saveExchange(sessionID, userMsg, assistantMsg string, cfg Config) error {
 	}
 
 	id := newID()
-	return insertExchange(id, sessionID, userMsg, assistantMsg, toBytes(vec), entities)
+	if err := insertExchange(id, sessionID, userMsg, assistantMsg, toBytes(vec), entities); err != nil {
+		return err
+	}
+
+	count, err := countExchangesBySession(sessionID)
+	if err != nil {
+		return err
+	}
+	if count%5 == 0 {
+		return summarizeSession(sessionID, cfg)
+	}
+	return nil
 }
