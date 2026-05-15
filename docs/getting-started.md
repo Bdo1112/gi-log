@@ -13,7 +13,7 @@ Every new Claude Code session starts cold — you re-explain your stack, re-desc
 
 gi-log is currently in early access. Reach out to get a token:
 
-- Email: oh.dh.brian@gmail.com
+- Email: brian.oh1112@gmail.com
 
 You'll receive a token that looks like `gilg_...`.
 
