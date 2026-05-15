@@ -2,17 +2,36 @@
 
 > Your context. Everywhere.
 
-AI sessions start cold. You re-explain your stack, re-describe past decisions, and re-solve problems you've already solved. gi-log gives your AI persistent, portable context that carries across sessions.
+## Why gi-log exists
 
-When context matters again, gi-log brings it back.
+AI tools are powerful, but their context is fragmented.
+
+Your workflows, decisions, and conversations become trapped inside isolated sessions, apps, and providers. Switching tools often means starting over.
+
+Static notes and `memory.md` files help, but they still require manual organization and retrieval.
+
+gi-log makes context portable by automatically capturing conversations, indexing them semantically, and bringing relevant context back when it matters again.
+
+All conversations and search indexes are stored locally on your machine.
 
 Currently supports Claude Code. Support for additional AI tools and agents is planned.
+
 
 ## How it works
 
 - **On every response** — a hook captures the user message and assistant response, embeds them, extracts keywords, and stores them in SQLite
 - **Every 5 exchanges** — a session summary is generated and stored alongside the raw exchanges for better recall accuracy
 - **On recall** — an MCP tool searches past conversations using keyword matching and vector similarity, then injects the most relevant matches as context
+
+## Use cases
+
+gi-log works especially well for:
+
+- engineering projects that span weeks or months
+- debugging sessions that require historical context
+- architecture discussions and technical decision tracking
+- AI-assisted workflows across multiple tools and sessions
+- developers who switch frequently between AI providers
 
 ## Storage
 
@@ -101,6 +120,13 @@ Or search with a specific query:
 | `server.api_url` | `https://gi-log-api-production.up.railway.app` | gi-log API URL (set automatically) |
 | `db.path` | `~/.gi-log/gi_log.db` | Path to the local SQLite database |
 | `search.top_k` | `5` | Number of results returned per recall |
+
+
+**Cost:** gi-log makes two OpenAI API calls per conversation exchange:
+- `text-embedding-3-small` for embeddings — $0.02 per million tokens
+- `gpt-4o-mini` for entity extraction — $0.15 per million input tokens, $0.60 per million output tokens
+
+For typical usage, saving thousands of conversations costs only a few dollars.
 
 ## Data
 
