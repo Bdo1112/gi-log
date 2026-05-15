@@ -21,6 +21,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if os.Args[1] == "install" {
+		if err := runInstall(); err != nil {
+			fmt.Fprintf(os.Stderr, "install error: %s\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	cfg, err := loadConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "config error: %s\n", err)
@@ -34,12 +42,6 @@ func main() {
 	}
 	fmt.Println(os.Args[1])
 	switch os.Args[1] {
-	case "install":
-		if err := runInstall(); err != nil {
-			fmt.Fprintf(os.Stderr, "install error: %s\n", err)
-			os.Exit(1)
-		}
-		return
 	case "save":
 		if err := runSave(cfg); err != nil {
 			logError(err)
@@ -142,12 +144,12 @@ func runSearch(cfg Config) error {
 
 func doSearch(query string, cfg Config) ([]SearchResult, error) {
 	// extract keywords first to decide pipeline
-	keywords, err := Extractor{}.Process(query, cfg.AI.ExtractionModel, cfg.AI.APIKey)
+	keywords, err := cfg.Client.Extract(query)
 	if err != nil {
 		return nil, fmt.Errorf("extract: %w", err)
 	}
 
-	vec, err := Embedder{}.Process(query, cfg.AI.EmbeddingModel, cfg.AI.APIKey)
+	vec, err := cfg.Client.Embed(query)
 	if err != nil {
 		return nil, fmt.Errorf("embed: %w", err)
 	}

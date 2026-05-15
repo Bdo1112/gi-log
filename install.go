@@ -8,6 +8,10 @@ import (
 )
 
 func runInstall() error {
+	if err := applyConfigDefaults(); err != nil {
+		fmt.Fprintf(os.Stderr, "gi-log: warning: could not update config: %s\n", err)
+	}
+
 	settingsPath := filepath.Join(os.Getenv("HOME"), ".claude", "settings.json")
 	claudeJSONPath := filepath.Join(os.Getenv("HOME"), ".claude.json")
 

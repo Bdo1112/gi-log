@@ -82,7 +82,7 @@ func summarizeSession(sessionID string, cfg Config) error {
 		sb.WriteString("User: " + e.UserMsg + "\nAssistant: " + e.AssistantMsg + "\n\n")
 	}
 
-	summary, err := Summarizer{}.Process(sb.String(), cfg.AI.ExtractionModel, cfg.AI.APIKey)
+	summary, err := cfg.Client.Summarize(sb.String())
 	if err != nil {
 		return fmt.Errorf("summarize: %w", err)
 	}
@@ -95,11 +95,11 @@ func summarizeSession(sessionID string, cfg Config) error {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		sessionVec, embedErr = Embedder{}.Process(summary, cfg.AI.EmbeddingModel, cfg.AI.APIKey)
+		sessionVec, embedErr = cfg.Client.Embed(summary)
 	}()
 	go func() {
 		defer wg.Done()
-		sessionEntities, extractErr = Extractor{}.Process(summary, cfg.AI.ExtractionModel, cfg.AI.APIKey)
+		sessionEntities, extractErr = cfg.Client.Extract(summary)
 	}()
 	wg.Wait()
 
