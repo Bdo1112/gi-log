@@ -42,6 +42,12 @@ func main() {
 	}
 	fmt.Println(os.Args[1])
 	switch os.Args[1] {
+	case "status":
+		if err := runStatus(cfg); err != nil {
+			fmt.Fprintf(os.Stderr, "status error: %s\n", err)
+			os.Exit(1)
+		}
+		return
 	case "save":
 		if err := runSave(cfg); err != nil {
 			logError(err)
@@ -109,6 +115,7 @@ func runSave(cfg Config) error {
 }
 
 func runEndSession(cfg Config) error {
+	// Currently not used because we rely on the session end hook to generate summaries, but could be used in the future for manual session management.
 	var input struct {
 		SessionID      string `json:"session_id"`
 		TranscriptPath string `json:"transcript_path"`

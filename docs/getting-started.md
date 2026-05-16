@@ -6,8 +6,9 @@ Every new Claude Code session starts cold — you re-explain your stack, re-desc
 
 ## Prerequisites
 
+- Go 1.21+
 - Claude Code installed
-- A gi-log token (see below)
+- A gi-log token (see step 1)
 
 ## 1. Get a token
 
@@ -15,17 +16,20 @@ gi-log is currently in early access. Reach out to get a token:
 
 - Email: brian.oh1112@gmail.com
 
-You'll receive a token that looks like `gilg_...`.
+You'll receive a token that looks like `gilg_...`. No OpenAI account needed — gi-log handles AI processing for you.
 
-## 2. Install the binary
+## 2. Install and set up
 
 ```bash
 go install github.com/Bdo1112/gi-log@latest
+gi-log install
 ```
 
-## 3. Configure your token
+`gi-log install` registers the hooks and MCP server in Claude Code and creates your config at `~/.gi-log/config.json`.
 
-Open `~/.gi-log/config.json` (created automatically on first run) and set your token:
+## 3. Add your token
+
+Open `~/.gi-log/config.json` and set your token:
 
 ```json
 {
@@ -35,19 +39,24 @@ Open `~/.gi-log/config.json` (created automatically on first run) and set your t
 }
 ```
 
-No OpenAI API key needed — gi-log handles that for you.
+## 4. Restart Claude Code
 
-## 4. Wire up Claude Code
+Hooks and the MCP server only take effect after a restart.
+
+## 5. Verify it's working
 
 ```bash
-gi-log install
+gi-log status
 ```
 
-This registers the hooks and MCP server in Claude Code automatically. Restart Claude Code after running this.
+You should see:
+- `mode: gi-log token` — token is configured
+- `reachable: YES` — API is reachable
+- `UserPromptSubmit: registered` and `Stop: registered` — hooks are wired up
 
-## 5. Start using it
+## 6. Start using it
 
-gi-log runs silently in the background from this point. Every Claude Code conversation is saved automatically.
+gi-log runs silently in the background. After each Claude response, your conversation is automatically saved and indexed.
 
 To recall past context, use the `/gi-log` slash command inside Claude Code:
 
@@ -55,9 +64,7 @@ To recall past context, use the `/gi-log` slash command inside Claude Code:
 /gi-log
 ```
 
-Claude will search your conversation history based on the current topic.
-
-Or search with a specific query:
+Claude will search your conversation history based on the current topic. Or search with a specific query:
 
 ```
 /gi-log Go debugging
@@ -65,6 +72,13 @@ Or search with a specific query:
 /gi-log authentication setup
 ```
 
-## That's it
+## Troubleshooting
 
-gi-log works automatically after setup. No commands to run, no manual saves.
+**`gi-log status` shows `exchanges: 0` after a few conversations**
+Make sure you restarted Claude Code after running `gi-log install`. The hooks only activate after a restart.
+
+**`reachable: NO`**
+Check your internet connection. If the issue persists, email brian.oh1112@gmail.com.
+
+**Hook not registered**
+Run `gi-log install` again, then restart Claude Code.

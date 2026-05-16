@@ -67,6 +67,7 @@ func runHookSessionEnd(cfg Config) error {
 	return summarizeSession(payload.SessionID, cfg)
 }
 
+// This hook is to handle when the ai response is back.
 func runHookStop(cfg Config) error {
 	var payload stopPayload
 	if err := json.NewDecoder(os.Stdin).Decode(&payload); err != nil {
@@ -79,7 +80,7 @@ func runHookStop(cfg Config) error {
 	tmp := tmpFile(payload.SessionID)
 	raw, err := os.ReadFile(tmp)
 	if err != nil {
-		return fmt.Errorf("no user message found for session %s: %w", payload.SessionID, err)
+		return fmt.Errorf("tmp file issue raised %s: %w please, send email to brian.oh1112@gmail.com", payload.SessionID, err)
 	}
 
 	var td tmpData
