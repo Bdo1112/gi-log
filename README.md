@@ -16,6 +16,13 @@ All conversations and search indexes are stored locally on your machine.
 
 Currently supports Claude Code. Support for additional AI tools and agents is planned.
 
+
+## How it works
+
+- **On every response** — a hook captures the user message and assistant response, embeds them, extracts keywords, and stores them in SQLite
+- **Every 5 exchanges** — a session summary is generated and stored alongside the raw exchanges for better recall accuracy
+- **On recall** — an MCP tool searches past conversations using keyword matching and vector similarity, then injects the most relevant matches as context
+
 ## Use cases
 
 gi-log works especially well for:
@@ -26,16 +33,26 @@ gi-log works especially well for:
 - AI-assisted workflows across multiple tools and sessions
 - developers who switch frequently between AI providers
 
-## How it works
+## Storage
 
-- **On every response** — a hook captures the user message and assistant response, embeds them via OpenAI, and stores them in a local SQLite database
-- **On recall** — an MCP tool searches past conversations using cosine similarity and injects the most relevant matches as context
+gi-log uses two storage modes depending on your config:
 
+**gi-log token (recommended)** — exchanges are saved to your local SQLite database and synced to the gi-log cloud. The cloud copy enables future features like cross-device sync. All AI processing (embeddings, summaries, entity extraction) is handled by the gi-log API — no OpenAI account needed.
+
+**OpenAI API key** — exchanges are saved to local SQLite only. AI processing goes directly to OpenAI using your key.
+
+**Cost with OpenAI key:** gi-log makes two OpenAI API calls per exchange:
+- `text-embedding-3-small` — $0.02 per million tokens
+- `gpt-4o-mini` — $0.15 per million input tokens, $0.60 per million output tokens
+
+For typical usage, saving thousands of conversations costs only a few dollars.
 
 ## Requirements
 
 - Go 1.21+
-- OpenAI API key
+- A gi-log token **or** your own OpenAI API key
+
+→ See [Getting Started](docs/getting-started.md) for the quickest setup path.
 
 ## Install
 
@@ -44,27 +61,24 @@ go install github.com/Bdo1112/gi-log@latest
 gi-log install
 ```
 
-This registers the hooks in `~/.claude/settings.json`, adds the MCP server to `~/.claude.json`, and installs the `/gi-log` slash command.
+This registers the hooks in `~/.claude/settings.json`, adds the MCP server to `~/.claude.json`, installs the `/gi-log` slash command, and ensures your config has the correct defaults.
 
-Then set your OpenAI API key:
+Then configure `~/.gi-log/config.json`:
 
-```bash
-# ~/.gi-log/config.json is created automatically on first run
-# open it and fill in your key
-```
-
+**Option A — gi-log token (no OpenAI account needed):**
 ```json
 {
   "ai": {
-    "api_key": "sk-...",
-    "embedding_model": "text-embedding-3-small",
-    "extraction_model": "gpt-4o-mini"
-  },
-  "db": {
-    "path": "~/.gi-log/gi_log.db"
-  },
-  "search": {
-    "top_k": 5
+    "gi_log_token": "gilg_..."
+  }
+}
+```
+
+**Option B — your own OpenAI API key:**
+```json
+{
+  "ai": {
+    "api_key": "sk-..."
   }
 }
 ```
@@ -95,22 +109,16 @@ Or search with a specific query:
 /gi-log database schema decisions
 ```
 
-### How saving works
-
-On every Claude response, gi-log automatically:
-1. Captures your message and Claude's response
-2. Generates an embedding vector via OpenAI
-3. Extracts key entities from the conversation
-4. Stores everything in a local SQLite database
-
 ## Config reference
 
 | Field | Default | Description |
 |---|---|---|
-| `ai.api_key` | — | Your OpenAI API key (required) |
-| `ai.embedding_model` | `text-embedding-3-small` | OpenAI embedding model |
-| `ai.extraction_model` | `gpt-4o-mini` | OpenAI model for entity extraction |
-| `db.path` | `~/.gi-log/gi_log.db` | Path to the SQLite database |
+| `ai.gi_log_token` | — | gi-log token (use instead of api_key) |
+| `ai.api_key` | — | OpenAI API key (use instead of gi_log_token) |
+| `ai.embedding_model` | `text-embedding-3-small` | Embedding model (OpenAI mode only) |
+| `ai.extraction_model` | `gpt-4o-mini` | Extraction/summarization model (OpenAI mode only) |
+| `server.api_url` | `https://gi-log-api-production.up.railway.app` | gi-log API URL (set automatically) |
+| `db.path` | `~/.gi-log/gi_log.db` | Path to the local SQLite database |
 | `search.top_k` | `5` | Number of results returned per recall |
 
 
@@ -122,12 +130,12 @@ For typical usage, saving thousands of conversations costs only a few dollars.
 
 ## Data
 
-All data is stored locally at `~/.gi-log/`:
-
+**Local** (`~/.gi-log/`):
 ```
 ~/.gi-log/
   config.json     — your config
-  gi_log.db       — SQLite database
+  gi_log.db       — SQLite database (all exchanges and summaries)
   errors/         — error logs
-  tmp/            — temporary files during hook execution
 ```
+
+**Cloud** (gi-log token mode only): exchanges and session summaries are synced to the gi-log API. This data is associated with your token and is not shared with other users.

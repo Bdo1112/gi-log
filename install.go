@@ -7,7 +7,24 @@ import (
 	"path/filepath"
 )
 
+func readSettings() (map[string]any, error) {
+	settingsPath := filepath.Join(os.Getenv("HOME"), ".claude", "settings.json")
+	data, err := os.ReadFile(settingsPath)
+	if err != nil {
+		return nil, err
+	}
+	var settings map[string]any
+	if err := json.Unmarshal(data, &settings); err != nil {
+		return nil, err
+	}
+	return settings, nil
+}
+
 func runInstall() error {
+	if err := applyConfigDefaults(); err != nil {
+		fmt.Fprintf(os.Stderr, "gi-log: warning: could not update config: %s\n", err)
+	}
+
 	settingsPath := filepath.Join(os.Getenv("HOME"), ".claude", "settings.json")
 	claudeJSONPath := filepath.Join(os.Getenv("HOME"), ".claude.json")
 

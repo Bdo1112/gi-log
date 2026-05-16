@@ -52,6 +52,22 @@ func runHookUserPrompt() error {
 	return os.WriteFile(tmpFile(payload.SessionID), data, 0644)
 }
 
+func runHookSessionEnd(cfg Config) error {
+	var payload struct {
+		SessionID     string `json:"session_id"`
+		HookEventName string `json:"hook_event_name"`
+	}
+	if err := json.NewDecoder(os.Stdin).Decode(&payload); err != nil {
+		return fmt.Errorf("invalid payload: %w", err)
+	}
+	if payload.SessionID == "" {
+		return fmt.Errorf("missing session_id")
+	}
+
+	return summarizeSession(payload.SessionID, cfg)
+}
+
+// This hook is to handle when the ai response is back.
 func runHookStop(cfg Config) error {
 	var payload stopPayload
 	if err := json.NewDecoder(os.Stdin).Decode(&payload); err != nil {
@@ -64,7 +80,7 @@ func runHookStop(cfg Config) error {
 	tmp := tmpFile(payload.SessionID)
 	raw, err := os.ReadFile(tmp)
 	if err != nil {
-		return fmt.Errorf("no user message found for session %s: %w", payload.SessionID, err)
+		return fmt.Errorf("tmp file issue raised %s: %w please, send email to brian.oh1112@gmail.com", payload.SessionID, err)
 	}
 
 	var td tmpData

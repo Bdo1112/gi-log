@@ -1,5 +1,14 @@
 package prompt
 
+const SummarizePrompt = `Summarize this conversation concisely in 3-5 sentences.
+Focus on:
+- What problem was being solved
+- Technologies and tools discussed
+- Key decisions made
+- Outcomes or conclusions reached
+
+Do not include small details like specific commands run.`
+
 const ExtractPrompt = `Extract high-quality retrieval keywords from this conversation.                                     
                                                                                                               
   Goal:                                                                                                                      

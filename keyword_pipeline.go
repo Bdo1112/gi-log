@@ -4,22 +4,25 @@ import "sort"
 
 type KeywordPipeline struct{}
 
-func (p KeywordPipeline) Search(ctx SearchContext, exchanges []Exchange, topK int) []SearchResult {
-	// filter exchanges whose entities overlap with query keywords
-	var filtered []Exchange
-	for _, e := range exchanges {
-		if entitiesOverlap(ctx.Keywords, e.Entities) {
-			filtered = append(filtered, e)
+func (p KeywordPipeline) Search(ctx SearchContext, sessions []Session, exchanges []Exchange, topK int) []SearchResult {
+	// find sessions whose entities match query keywords
+	matched := map[string]bool{}
+	for _, s := range sessions {
+		if entitiesOverlap(ctx.Keywords, s.Entities) {
+			matched[s.SessionID] = true
 		}
 	}
 
-	if len(filtered) == 0 {
+	if len(matched) == 0 {
 		return nil
 	}
 
-	// re-rank filtered set by cosine similarity
+	// collect exchanges from matching sessions, re-rank by cosine similarity
 	var results []SearchResult
-	for _, e := range filtered {
+	for _, e := range exchanges {
+		if !matched[e.SessionID] {
+			continue
+		}
 		vec := fromBytes(e.Embedding)
 		sim := cosineSimilarity(ctx.QueryVec, vec)
 		results = append(results, SearchResult{

@@ -21,6 +21,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if os.Args[1] == "install" {
+		if err := runInstall(); err != nil {
+			fmt.Fprintf(os.Stderr, "install error: %s\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	cfg, err := loadConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "config error: %s\n", err)
@@ -34,9 +42,9 @@ func main() {
 	}
 	fmt.Println(os.Args[1])
 	switch os.Args[1] {
-	case "install":
-		if err := runInstall(); err != nil {
-			fmt.Fprintf(os.Stderr, "install error: %s\n", err)
+	case "status":
+		if err := runStatus(cfg); err != nil {
+			fmt.Fprintf(os.Stderr, "status error: %s\n", err)
 			os.Exit(1)
 		}
 		return
@@ -56,6 +64,12 @@ func main() {
 		if err := runSearch(cfg); err != nil {
 			logError(err)
 			fmt.Fprintf(os.Stderr, "search error: %s\n", err)
+			os.Exit(1)
+		}
+	case "hook-session-end":
+		if err := runHookSessionEnd(cfg); err != nil {
+			logError(err)
+			fmt.Fprintf(os.Stderr, "hook-session-end error: %s\n", err)
 			os.Exit(1)
 		}
 	case "hook-user-prompt":
@@ -101,6 +115,7 @@ func runSave(cfg Config) error {
 }
 
 func runEndSession(cfg Config) error {
+	// Currently not used because we rely on the session end hook to generate summaries, but could be used in the future for manual session management.
 	var input struct {
 		SessionID      string `json:"session_id"`
 		TranscriptPath string `json:"transcript_path"`
@@ -136,12 +151,12 @@ func runSearch(cfg Config) error {
 
 func doSearch(query string, cfg Config) ([]SearchResult, error) {
 	// extract keywords first to decide pipeline
-	keywords, err := Extractor{}.Process(query, cfg.AI.ExtractionModel, cfg.AI.APIKey)
+	keywords, err := cfg.Client.Extract(query)
 	if err != nil {
 		return nil, fmt.Errorf("extract: %w", err)
 	}
 
-	vec, err := Embedder{}.Process(query, cfg.AI.EmbeddingModel, cfg.AI.APIKey)
+	vec, err := cfg.Client.Embed(query)
 	if err != nil {
 		return nil, fmt.Errorf("embed: %w", err)
 	}
@@ -152,14 +167,19 @@ func doSearch(query string, cfg Config) ([]SearchResult, error) {
 		Keywords: keywords,
 	}
 
+	sessions, err := fetchAllSessions()
+	if err != nil {
+		return nil, fmt.Errorf("db sessions: %w", err)
+	}
+
 	exchanges, err := fetchAllExchanges()
 	if err != nil {
-		return nil, fmt.Errorf("db: %w", err)
+		return nil, fmt.Errorf("db exchanges: %w", err)
 	}
 
 	// try keyword pipeline first
 	if len(keywords) > 0 {
-		results := KeywordPipeline{}.Search(ctx, exchanges, cfg.Search.TopK)
+		results := KeywordPipeline{}.Search(ctx, sessions, exchanges, cfg.Search.TopK)
 		if len(results) > 0 {
 			return results, nil
 		}

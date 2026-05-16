@@ -16,11 +16,11 @@ func saveExchange(sessionID, userMsg, assistantMsg string, cfg Config) error {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		vec, embedErr = Embedder{}.Process(combined, cfg.AI.EmbeddingModel, cfg.AI.APIKey)
+		vec, embedErr = cfg.Client.Embed(combined)
 	}()
 	go func() {
 		defer wg.Done()
-		entities, extractErr = Extractor{}.Process(combined, cfg.AI.ExtractionModel, cfg.AI.APIKey)
+		entities, extractErr = cfg.Client.Extract(combined)
 	}()
 	wg.Wait()
 
@@ -32,5 +32,17 @@ func saveExchange(sessionID, userMsg, assistantMsg string, cfg Config) error {
 	}
 
 	id := newID()
-	return insertExchange(id, sessionID, userMsg, assistantMsg, toBytes(vec), entities)
+	store := newStore(cfg)
+	if err := store.Save(id, sessionID, userMsg, assistantMsg, toBytes(vec), entities); err != nil {
+		return err
+	}
+
+	count, err := countExchangesBySession(sessionID)
+	if err != nil {
+		return err
+	}
+	if count%5 == 0 {
+		return summarizeSession(sessionID, cfg)
+	}
+	return nil
 }
