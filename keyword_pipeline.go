@@ -9,7 +9,7 @@ func (p KeywordPipeline) Search(ctx SearchContext, sessions []Session, exchanges
 	matched := map[string]bool{}
 	for _, s := range sessions {
 		if entitiesOverlap(ctx.Keywords, s.Entities) {
-			matched[s.SessionID] = true
+			matched[s.ID] = true
 		}
 	}
 
